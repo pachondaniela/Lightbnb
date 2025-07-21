@@ -35,49 +35,86 @@ const getAllProperties = function (options, limit = 10) {
 
 
 
+/// Users
+
+/**
+ * Get a single user from the database given their email.
+ * @param {String} email The email of the user.
+ * @return {Promise<{}>} A promise to the user.
+ */
+const getUserWithEmail = function (email) {
+  const queryString = `
+    SELECT * 
+    FROM users
+    WHERE users.email = $1
+  `;
+
+  return pool.query(queryString, [email])
+    .then((res) => {
+      if (res.rows.length === 0) {
+        return null; // No user found
+      }
+      console.log(res.rows[0]); 
+      return res.rows[0];
+    })
+    .catch((err) => {
+      console.error("Database error:", err.message);
+      return null; 
+    });
+};
 
 
+/**
+ * Get a single user from the database given their id.
+ * @param {string} id The id of the user.
+ * @return {Promise<{}>} A promise to the user.
+ */
+const getUserWithId = function (id) {
+   const queryString = `
+    SELECT * 
+    FROM users
+    WHERE users.id = $1
+  `;
+
+  return pool.query(queryString, [id])
+    .then((res) => {
+      if (res.rows.length === 0) {
+        return null; // No user found
+      }
+      console.log(res.rows[0]); 
+      return res.rows[0];
+    })
+    .catch((err) => {
+      console.error("Database error:", err.message);
+      return null; 
+    });
+};
 
 
+/**
+ * Add a new user to the database.
+ * @param {{name: string, password: string, email: string}} user
+ * @return {Promise<{}>} A promise to the user.
+ */
+const addUser = function (name, email, password) {
 
-// /// Users
+  const queryString = `
+  INSERT INTO users (name, email, password)
+  VALUES ($1, $2, $3)
+  RETURNING *
+  `
+ 
+  return pool.query(queryString, [name, email, password])
+    .then((res) => {
+      console.log(res.rows)
+      return res.rows
+    })
+    .catch((err) => {
+      console.log(err.message)
+    })
+};
 
-// /**
-//  * Get a single user from the database given their email.
-//  * @param {String} email The email of the user.
-//  * @return {Promise<{}>} A promise to the user.
-//  */
-// const getUserWithEmail = function (email) {
-//   let resolvedUser = null;
-//   for (const userId in users) {
-//     const user = users[userId];
-//     if (user && user.email.toLowerCase() === email.toLowerCase()) {
-//       resolvedUser = user;
-//     }
-//   }
-//   return Promise.resolve(resolvedUser);
-// };
 
-// /**
-//  * Get a single user from the database given their id.
-//  * @param {string} id The id of the user.
-//  * @return {Promise<{}>} A promise to the user.
-//  */
-// const getUserWithId = function (id) {
-//   return Promise.resolve(users[id]);
-// };
-
-// /**
-//  * Add a new user to the database.
-//  * @param {{name: string, password: string, email: string}} user
-//  * @return {Promise<{}>} A promise to the user.
-//  */
-// const addUser = function (user) {
-//   const userId = Object.keys(users).length + 1;
-//   user.id = userId;
-//   users[userId] = user;
-//   return Promise.resolve(user);
-// };
 
 // /// Reservations
 
@@ -131,5 +168,8 @@ const getAllProperties = function (options, limit = 10) {
 // };
 
 module.exports = {
-  getAllProperties
+  getAllProperties,
+  getUserWithEmail,
+  getUserWithId,
+  addUser
 }
