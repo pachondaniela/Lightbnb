@@ -9,28 +9,6 @@ const pool = new Pool({
 
 
 
-/**
- * Get all properties.
- * @param {{}} options An object containing query options.
- * @param {*} limit The number of results to return.
- * @return {Promise<[{}]>}  A promise to the properties.
- */
-
-
-const getAllProperties = function (options, limit = 10) {
-  const queryString = `
-    SELECT * FROM properties
-    LIMIT $1
-  `
-  return pool.query(queryString, [limit])
-    .then((res) => {
-      console.log(res.rows);
-      return res.rows
-    })
-    .catch((err) => {
-      console.log(err.message);
-    })
-};
 
 
 
@@ -150,10 +128,47 @@ const getAllReservations = function (guest_id, limit = 10) {
 };
 
 
-getAllReservations(5,10)
-// // /// Properties
+// /// Properties
 
-// /**
+
+/**
+ * Get all properties.
+ * @param {{}} options An object containing query options.
+ * @param {*} limit The number of results to return.
+ * @return {Promise<[{}]>}  A promise to the properties.
+ */
+
+
+const getAllProperties = function (city, owner_id, minimum_price_per_night, maximum_price_per_night, rating) {
+  const queryString = `
+  SELECT 
+   properties.*,
+   AVG(property_reviews.rating) as ratings
+  FROM properties
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE city LIKE $1
+    AND owner_id = $2
+    AND cost_per_night BETWEEN $3 AND $4
+  GROUP BY properties.id
+  HAVING AVG(property_reviews.rating) >= $5
+  ORDER BY cost_per_night
+  LIMIT 10;
+  `
+  const values = [`%${city}%`, owner_id, minimum_price_per_night, maximum_price_per_night, rating];
+  console.log("Running query with values:", values);
+
+  return pool.query(queryString, values)
+    .then((res) => {
+      console.log(res.rows);
+      return res.rows
+    })
+    .catch((err) => {
+      console.log(err.message);
+    })
+};
+
+
+/**
 //  * Get all properties.
 //  * @param {{}} options An object containing query options.
 //  * @param {*} limit The number of results to return.
