@@ -169,46 +169,66 @@ const getAllProperties = function (city, owner_id, minimum_price_per_night, maxi
 
 
 /**
-//  * Get all properties.
-//  * @param {{}} options An object containing query options.
-//  * @param {*} limit The number of results to return.
-//  * @return {Promise<[{}]>}  A promise to the properties.
-//  */
+ * Add a property to the database
+ * @param {{}} property An object containing all of the property details.
+ * @return {Promise<{}>} A promise to the property.
+ */
+const addProperty = function (property) {
 
+  const queryString = `
+  INSERT INTO properties (
+    owner_id, 
+    title, 
+    description, 
+    thumbnail_photo_url, 
+    cover_photo_url, 
+    cost_per_night, 
+    parking_spaces, 
+    number_of_bathrooms, 
+    number_of_bedrooms, 
+    country, 
+    street, 
+    city, 
+    province, 
+    post_code, 
+    active)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+  RETURNING *
+  `
+   const values = [
+    property.owner_id,
+    property.title,
+    property.description,
+    property.thumbnail_photo_url,
+    property.cover_photo_url,
+    property.cost_per_night,
+    property.parking_spaces,
+    property.number_of_bathrooms,
+    property.number_of_bedrooms,
+    property.country,
+    property.street,
+    property.city,
+    property.province,
+    property.post_code,
+    property.active
+  ];
 
-// const getAllProperties = function (options, limit = 10) {
-//   const limitedProperties = {};
-//   for (let i = 1; i <= limit; i++) {
-//     limitedProperties[i] = properties[i];
-//   }
-//   return Promise.resolve(limitedProperties);
-// };
+  return pool.query(queryString, values)
+    .then((res) => {
+      console.log(res.rows)
+      return res.rows
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+};
 
-// /**
-//  * Add a property to the database
-//  * @param {{}} property An object containing all of the property details.
-//  * @return {Promise<{}>} A promise to the property.
-//  */
-// const addProperty = function (property) {
-//   const propertyId = Object.keys(properties).length + 1;
-//   property.id = propertyId;
-//   properties[propertyId] = property;
-//   return Promise.resolve(property);
-// };
-
-// module.exports = {
-//   getUserWithEmail,
-//   getUserWithId,
-//   addUser,
-//   getAllReservations,
-//   getAllProperties,
-//   addProperty,
-// };
 
 module.exports = {
   getAllProperties,
   getUserWithEmail,
   getUserWithId,
   addUser,
-  getAllReservations
+  getAllReservations,
+  addProperty
 }
