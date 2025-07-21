@@ -139,32 +139,69 @@ const getAllReservations = function (guest_id, limit = 10) {
  */
 
 
-const getAllProperties = function (city, owner_id, minimum_price_per_night, maximum_price_per_night, rating) {
-  const queryString = `
-  SELECT 
-   properties.*,
-   AVG(property_reviews.rating) as ratings
-  FROM properties
-  JOIN property_reviews ON properties.id = property_reviews.property_id
-  WHERE city LIKE $1
-    AND owner_id = $2
-    AND cost_per_night BETWEEN $3 AND $4
-  GROUP BY properties.id
-  HAVING AVG(property_reviews.rating) >= $5
-  ORDER BY cost_per_night
-  LIMIT 10;
-  `
-  const values = [`%${city}%`, owner_id, minimum_price_per_night, maximum_price_per_night, rating];
-  console.log("Running query with values:", values);
+const getAllProperties = function (options, limit = 10) {
+  const queryParams = [];
+  let queryString = `
+    SELECT properties.*, AVG(property_reviews.rating) AS average_rating
+    FROM properties
+    JOIN property_reviews ON properties.id = property_reviews.property_id
+  `;
 
-  return pool.query(queryString, values)
-    .then((res) => {
-      console.log(res.rows);
-      return res.rows
+  const whereClauses = [];
+
+  // City filter
+  if (options.city) {
+    queryParams.push(`%${options.city}%`);
+    whereClauses.push(`city LIKE $${queryParams.length}`);
+  }
+
+  // Owner ID filter
+  if (options.owner_id) {
+    queryParams.push(options.owner_id);
+    whereClauses.push(`owner_id = $${queryParams.length}`);
+  }
+
+  // Price filter
+  if (options.minimum_price_per_night && options.maximum_price_per_night) {
+    queryParams.push(options.minimum_price_per_night);
+    whereClauses.push(`cost_per_night >= $${queryParams.length}`);
+
+    queryParams.push(options.maximum_price_per_night);
+    whereClauses.push(`cost_per_night <= $${queryParams.length}`);
+  }
+
+  // Add WHERE clause if there are filters
+  if (whereClauses.length > 0) {
+    queryString += " WHERE " + whereClauses.join(" AND ");
+  }
+
+  // Grouping
+  queryString += ` GROUP BY properties.id`;
+
+  // Rating filter
+  if (options.minimum_rating) {
+    queryParams.push(options.minimum_rating);
+    queryString += ` HAVING AVG(property_reviews.rating) >= $${queryParams.length}`;
+  }
+
+  // Ordering and limit
+  queryParams.push(limit);
+  queryString += `
+    ORDER BY cost_per_night
+    LIMIT $${queryParams.length};
+  `;
+
+  // Debug log
+  console.log("Final query:", queryString);
+  console.log("With values:", queryParams);
+
+  return pool.query(queryString, queryParams)
+    .then(res => {
+      return res.rows;
     })
-    .catch((err) => {
-      console.log(err.message);
-    })
+    .catch(err => {
+      console.error("Error running query:", err.message);
+    });
 };
 
 
@@ -190,9 +227,8 @@ const addProperty = function (property) {
     street, 
     city, 
     province, 
-    post_code, 
-    active)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    post_code)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
   RETURNING *
   `
    const values = [
@@ -210,7 +246,7 @@ const addProperty = function (property) {
     property.city,
     property.province,
     property.post_code,
-    property.active
+  
   ];
 
   return pool.query(queryString, values)
@@ -222,6 +258,23 @@ const addProperty = function (property) {
       console.log(err)
     })
 };
+
+addProperty({
+  owner_id: 1,
+  title: 'Speed Lamp',
+  description: 'Modern loft with natural light',
+  thumbnail_photo_url: 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg?auto=compress&cs=tinysrgb&h=350',
+  cover_photo_url: 'https://images.pexels.com/photos/2086676/pexels-photo-2086676.jpeg',
+  cost_per_night: 93061,
+  parking_spaces: 6,
+  number_of_bathrooms: 4,
+  number_of_bedrooms: 8,
+  country: 'Canada',
+  street: '536 Namsub Highway',
+  city: 'Sotboske',
+  province: 'Quebec',
+  post_code: 'H1A 2B3'
+});
 
 
 module.exports = {
