@@ -116,18 +116,42 @@ const addUser = function (name, email, password) {
 
 
 
-// /// Reservations
+/// Reservations
 
-// /**
-//  * Get all reservations for a single user.
-//  * @param {string} guest_id The id of the user.
-//  * @return {Promise<[{}]>} A promise to the reservations.
-//  */
-// const getAllReservations = function (guest_id, limit = 10) {
-//   return getAllProperties(null, 2);
-// };
+/**
+ * Get all reservations for a single user.
+ * @param {string} guest_id The id of the user.
+ * @return {Promise<[{}]>} A promise to the reservations.
+ */
+const getAllReservations = function (guest_id, limit = 10) {
 
-// /// Properties
+  const queryString = `
+  SELECT 
+    reservations.id as id, 
+    properties.*, 
+    reservations.start_date as start_date, 
+    AVG(property_reviews.rating) as average_rating
+  FROM properties
+  JOIN reservations ON properties.id = reservations.property_id
+  JOIN property_reviews ON properties.id = property_reviews.property_id
+  WHERE reservations.guest_id = $1
+  GROUP BY reservations.id, properties.id
+  ORDER BY reservations.start_date
+  LIMIT $2;
+  `
+  return pool.query(queryString, [guest_id, limit])
+    .then((res) => {
+      console.log(res.rows)
+      return res.rows
+    })
+    .catch((err) => {
+      console.log(err.message)
+    })
+};
+
+
+getAllReservations(5,10)
+// // /// Properties
 
 // /**
 //  * Get all properties.
@@ -135,7 +159,6 @@ const addUser = function (name, email, password) {
 //  * @param {*} limit The number of results to return.
 //  * @return {Promise<[{}]>}  A promise to the properties.
 //  */
-
 
 
 // const getAllProperties = function (options, limit = 10) {
@@ -171,5 +194,6 @@ module.exports = {
   getAllProperties,
   getUserWithEmail,
   getUserWithId,
-  addUser
+  addUser,
+  getAllReservations
 }
